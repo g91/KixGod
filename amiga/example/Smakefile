@@ -1,0 +1,73 @@
+#
+# Smakefile for Amiga Packet Communication Framework
+# For use with SAS/C compiler
+#
+
+# Compiler and linker
+CC = sc
+LINK = slink
+
+# Base compiler flags
+CFLAGS = NOSTKCHK NOCHKABORT STRINGMERGE STRUCTUREEQUIVALENCE UNSIGNEDCHAR \
+         INCLUDEDIR=include: INCLUDEDIR=sc:include/ \
+         OPTIMIZE OPTIMIZERINLINELOCAL OPTIMIZERSCHEDULER OPTIMIZERTIME
+
+# Linker flags  
+LFLAGS = NOICONS STRIPDEBUG
+
+# Libraries
+LIBS = LIB:sc.lib LIB:amiga.lib
+
+# Object files
+FRAMEWORK_OBJ = amiga_packet_framework.o
+FRAMEWORK_STANDALONE_OBJ = amiga_packet_framework_standalone.o
+EXAMPLE_OBJ = example_amiga_serial_app.o
+
+# Targets
+all: packet_framework example_app
+
+# Build the standalone framework (with main function)
+packet_framework: $(FRAMEWORK_STANDALONE_OBJ)
+    $(LINK) FROM $(FRAMEWORK_STANDALONE_OBJ) TO packet_framework $(LFLAGS) LIB $(LIBS)
+
+# Build the example application  
+example_app: $(EXAMPLE_OBJ) $(FRAMEWORK_OBJ)
+    $(LINK) FROM $(EXAMPLE_OBJ) $(FRAMEWORK_OBJ) TO example_app $(LFLAGS) LIB $(LIBS)
+
+# Compile framework source (library version, no main)
+amiga_packet_framework.o: amiga_packet_framework.c amiga_packet_framework.h
+    $(CC) $(CFLAGS) amiga_packet_framework.c
+
+# Compile framework source (standalone version with main)
+amiga_packet_framework_standalone.o: amiga_packet_framework.c amiga_packet_framework.h
+    $(CC) $(CFLAGS) DEFINE=STANDALONE_FRAMEWORK amiga_packet_framework.c OBJECTNAME=amiga_packet_framework_standalone.o
+
+# Compile example application
+example_amiga_serial_app.o: example_amiga_serial_app.c amiga_packet_framework.h
+    $(CC) $(CFLAGS) example_amiga_serial_app.c
+
+# Clean build files
+clean:
+    -delete $(FRAMEWORK_OBJ) $(FRAMEWORK_STANDALONE_OBJ) $(EXAMPLE_OBJ) packet_framework example_app
+
+# Install targets
+install: all
+    copy packet_framework C:
+    copy example_app C:
+
+# Debug versions
+debug: CFLAGS += DEBUG=FULLFLUSH DEFINE=DEBUG
+debug: LFLAGS = NOICONS ADDSYM
+debug: all
+
+# Help target
+help:
+    @echo "Available targets:"
+    @echo "  all         - Build both framework and example"
+    @echo "  packet_framework - Build standalone framework"
+    @echo "  example_app - Build example application"
+    @echo "  clean       - Remove object files and executables"
+    @echo "  debug       - Build debug versions"
+    @echo "  install     - Copy executables to C:"
+
+.PHONY: all clean install debug help

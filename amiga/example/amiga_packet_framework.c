@@ -213,6 +213,8 @@ void ProcessPackets(PacketHandler handler)
     }
 }
 
+/* Only include main if building standalone framework */
+#ifdef STANDALONE_FRAMEWORK
 /* Example usage */
 int main(void)
 {
@@ -231,3 +233,4 @@ int main(void)
     
     return 0;
 }
+#endif
